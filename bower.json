@@ -1,0 +1,24 @@
+{
+  "name": "ember-smart-property",
+  "version": "0.0.0",
+  "homepage": "https://github.com/bmac/ember-smart-property",
+  "authors": [
+    "bmac <bmac325@GMail.com>"
+  ],
+  "description": "Smart computed properties for ember",
+  "main": "smart-property.js",
+  "keywords": [
+    "ember"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "ember": "~1.4.0"
+  }
+}
