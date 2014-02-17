@@ -1,80 +1,115 @@
 (function() {
-    var outerComputed = [],
-        currentComputed;
+  var get = Ember.get;
+  var outerComputed = [],
+      currentComputed;
 
-    function begin(computed) {
-        if (currentComputed) {
-            outerComputed.push(currentComputed);
-        }
-        currentComputed = computed;
+  var dependencyDetection = {
+    begin: function(computed) {
+      if (currentComputed) {
+        outerComputed.push(currentComputed);
+      }
+      currentComputed = {
+        computed: computed,
+        seen: new Ember.Map()
+      };
+    },
+    end: function() {
+      currentComputed = outerComputed.pop();
+    },
+
+    registerDependency: function(obj, prop, value) {
+      if (!currentComputed) {
+        return;
+      }
+      var path = prop;
+
+      if (Ember.isArray(value)) {
+        path = path + '.[]';
+      }
+      // 
+      var prevPath = currentComputed.seen.get(obj);
+      if (prevPath) {
+        path = prevPath + '.' + path;
+      }
+      
+      if (value && typeof value === 'object') {
+        currentComputed.seen.set(value, path);
+      }
+
+      currentComputed.computed._dependentKeys.push(path);
+    }
+  };
+
+
+  var SmartComputed = function(func) {
+    Ember.ComputedProperty.call(this, func);
+  };
+
+  SmartComputed.prototype = new Ember.ComputedProperty();
+
+  var originalComputedGet = Ember.ComputedProperty.prototype.get;
+  SmartComputed.prototype.get = function(obj, keyName) {
+    if (this._cacheable) {
+      var meta = Ember.meta(obj);
+      var cache = meta.cache;
+      if (keyName in cache) {
+        return cache[keyName];
+      }
+    }
+    this._dependentKeys = [];
+    dependencyDetection.begin(this);
+    var ret = originalComputedGet.apply(this, arguments);
+    dependencyDetection.end();
+    return ret;
+  };
+
+
+  var SmartProp = window.SmartProp = {};
+  SmartProp.SmartComputed = SmartComputed;
+
+  var computed = SmartProp.computed = function(func) {
+    if (typeof func !== "function") {
+      throw new Ember.Error("Smart Computed Property declared without a property function");
     }
 
-    function end() {
-        currentComputed = outerComputed.pop();
-    }
+    var cp = new SmartComputed(func);
 
-    function registerDependency(dependency) {
-        if (currentComputed) {
-            var meta = Ember.meta(currentComputed);
-            meta.desc._dependentKeys.push(dependency);
-        }
-    }
+    return cp;
+  };
 
-
-    var dependencyDetection = {
-        begin: begin,
-        end: end,
-        registerDependency: registerDependency
+  if (Ember.EXTEND_PROTOTYPES === true || Ember.EXTEND_PROTOTYPES.Function) {
+    Function.prototype.smartProperty = function() {
+      var ret = SmartProp.computed(this);
+      // ComputedProperty.prototype.property expands properties; no need for us to
+      // do so here.
+      return ret.property.call(ret);
     };
+  }
 
+  SmartProp.get = function(obj, prop) {
+    var ret = get(obj, prop);
+    dependencyDetection.registerDependency(obj, prop, ret);
+    return ret;
+  };
 
-
-
-    var originalGet = Ember.get;
-    Ember.get = function(object, path) {
-        dependencyDetection.registerDependency(path);
-        originalGet.apply(this, arguments);
-    };
-
-
-    var SmartComputed = Ember.ComputedProperty;
-
-    SmartComputed.prototype = new Ember.ComputedProperty();
-
-
-    var originalComputedGet = Ember.ComputedProperty.prototype.get;
-    SmartComputed.prototype.get = function(obj, keyName) {
-        if (this._cacheable) {
-            var meta = Ember.meta(obj);
-            meta.desc._dependentKeys = [];
-            dependencyDetection.begin(this);
-            originalComputedGet.apply(this, arguments);
-            dependencyDetection.end();
-        } else {
-            originalComputedGet.apply(this, arguments);
-        }
-    };
-
-
-    window.smartComputed = function(func) {
-        var args;
-
-        if (arguments.length > 1) {
-            args = [].slice.call(arguments, 0, -1);
-            func = [].slice.call(arguments, -1)[0];
-        }
-
-        if (typeof func !== "function") {
-            throw new Ember.Error("Computed Property declared without a property function");
-        }
-
-        var cp = new SmartComputed(func);
-
-        if (args) {
-            cp.property.apply(cp, args);
-        }
-
-        return cp;
-    };
-
+  
+  if (typeof Ember.ENV.SMART_PROP_EXTEND_OBJECT_GET === 'undefined' && 
+      typeof Ember.ENV.SMART_PROP_EXTEND_EMBER === 'undefined') {
+    Ember.ENV.SMART_PROP_EXTEND_OBJECT_GET = true;
+  }
+  if (Ember.ENV.SMART_PROP_EXTEND_EMBER || Ember.ENV.SMART_PROP_EXTEND_OBJECT_GET) {
+    Ember.Object.reopen({
+      get: function(keyName) {
+        return SmartProp.get(this, keyName);
+      }
+    });
+  }
+  
+  if (typeof Ember.ENV.SMART_PROP_EXTEND_EMBER_GET === 'undefined' &&
+      typeof Ember.ENV.SMART_PROP_EXTEND_EMBER === 'undefined') {
+    Ember.ENV.SMART_PROP_EXTEND_EMBER_GET = true;
+  }
+  if (Ember.ENV.SMART_PROP_EXTEND_EMBER || Ember.ENV.SMART_PROP_EXTEND_EMBER_GET) {
+    Ember.get = SmartProp.get;
+  }
 }());
