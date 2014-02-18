@@ -64,6 +64,15 @@
     return ret;
   };
 
+  var originalComputedSet = Ember.ComputedProperty.prototype.set;
+  SmartComputed.prototype.set = function() {
+    this._dependentKeys = [];
+    dependencyDetection.begin(this);
+    var ret = originalComputedSet.apply(this, arguments);
+    dependencyDetection.end();
+    return ret;
+  };
+
 
   var SmartProp = window.SmartProp = {};
   SmartProp.SmartComputed = SmartComputed;
