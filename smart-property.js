@@ -18,6 +18,7 @@
     },
 
     registerDependency: function(obj, prop, value) {
+
       if (!currentComputed) {
         return;
       }
@@ -86,9 +87,13 @@
     };
   }
 
-  SmartProp.get = function(obj, prop) {
-    var ret = get(obj, prop);
-    dependencyDetection.registerDependency(obj, prop, ret);
+  SmartProp.get = function(obj, keyName) {
+    if (!keyName && 'string'===typeof obj) {
+      keyName = obj;
+      obj = null;
+    }
+    var ret = get(obj, keyName);
+    dependencyDetection.registerDependency(obj, keyName, ret);
     return ret;
   };
 
