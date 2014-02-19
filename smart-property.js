@@ -24,6 +24,7 @@
       }
       var path = prop;
 
+      // this needs to be smarter
       if (Ember.isArray(value)) {
         path = path + '.@each';
       }
@@ -36,7 +37,6 @@
       if (value && typeof value === 'object') {
         currentComputed.seen.set(value, path);
       }
-
       currentComputed.computed._dependentKeys.push(path);
     }
   };
@@ -113,6 +113,12 @@
   }
   if (Ember.ENV.SMART_PROP_EXTEND_EMBER || Ember.ENV.SMART_PROP_EXTEND_OBJECT_GET) {
     Ember.Object.reopen({
+      get: function(keyName) {
+        return SmartProp.get(this, keyName);
+      }
+    });
+
+    Ember.Observable.reopen({
       get: function(keyName) {
         return SmartProp.get(this, keyName);
       }

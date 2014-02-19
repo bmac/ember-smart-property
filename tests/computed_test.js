@@ -823,7 +823,7 @@ test('it should detect computed properties on subsiquent evals', function() {
 
 
 
-test('it should re-eval', function() {
+test('it should detect new dependencies', function() {
 
   var Hero = Ember.Object.extend({
     fullname: function() {
@@ -846,3 +846,132 @@ test('it should re-eval', function() {
   spiderman.set('superMode', true);
   equal(spiderman.get('fullname'), 'Spider Man');
 });
+
+
+test('it should detect nested dependencies', function() {
+
+  var TestObject = Ember.Object.extend({
+    nested: function() {
+        var obj = this.get('someObject');
+        return obj.get('foo');
+    }.smartProperty()
+  });
+
+  var obj = TestObject.create({
+      someObject: Ember.Object.create({
+          foo: 0
+      })
+  });
+
+  equal(obj.get('nested'), 0);
+  obj.set('someObject.foo', 1);
+  equal(obj.get('nested'), 1);
+  var someObject = obj.get('someObject');
+  someObject.set('foo', 2);
+
+  equal(obj.get('nested'), 2);
+});
+
+
+test('it should detect nested dependencies', function() {
+
+  var TestObject = Ember.Object.extend({
+    nested: function() {
+        var obj = this.get('someObject');
+        return Ember.get(obj, 'foo');
+    }.smartProperty()
+  });
+
+  var obj = TestObject.create({
+      someObject: {
+          foo: 0
+      }
+  });
+
+  equal(obj.get('nested'), 0);
+  obj.set('someObject.foo', 1);
+  equal(obj.get('nested'), 1);
+  var someObject = obj.get('someObject');
+  Ember.set(someObject, 'foo', 2);
+
+  equal(obj.get('nested'), 2);
+});
+
+
+test('it should detect understand paths', function() {
+
+  var TestObject = Ember.Object.extend({
+    nested: function() {
+        return this.get('someObject.foo');
+    }.smartProperty()
+  });
+
+  var obj = TestObject.create({
+      someObject: {
+          foo: 0
+      }
+  });
+
+  equal(obj.get('nested'), 0);
+  obj.set('someObject.foo', 1);
+  equal(obj.get('nested'), 1);
+  var someObject = obj.get('someObject');
+  Ember.set(someObject, 'foo', 2);
+  equal(obj.get('nested'), 2);
+});
+
+
+test('it should work with arrays', function() {
+
+  var TestObject = Ember.Object.extend({
+    arrayLast: function() {
+      return this.get('someArray').get('lastObject');
+    }.smartProperty()
+  });
+
+  var obj = TestObject.create({
+      someArray: [1]
+  });
+
+  equal(obj.get('arrayLast'), 1);
+  obj.get('someArray').pushObject(2);
+  equal(obj.get('arrayLast'), 2);
+});
+
+
+test('it should work with arrays properties', function() {
+
+  var TestObject = Ember.Object.extend({
+    lastFoo: function() {
+      return Ember.get(this.get('someArray'), 'lastObject.foo');
+    }.smartProperty()
+  });
+
+  var obj = TestObject.create({
+      someArray: [{foo: 'asdf'}]
+  });
+
+  equal(obj.get('lastFoo'), 'asdf');
+  obj.set('someArray.lastObject.foo', 'rawr');
+  equal(obj.get('lastFoo'), 'rawr');
+});
+
+
+test('it should work with arrays of objects', function() {
+
+  var TestObject = Ember.Object.extend({
+    lastFoo: function() {
+      return Ember.get(this.get('someArray').get('lastObject'), 'foo');
+    }.smartProperty()
+  });
+
+  var obj = TestObject.create({
+      someArray: [{foo: 'asdf'}]
+  });
+
+  equal(obj.get('lastFoo'), 'asdf');
+  obj.set('someArray.lastObject.foo', 'rawr');
+  equal(obj.get('lastFoo'), 'rawr');
+});
+
+
