@@ -25,7 +25,7 @@
       var path = prop;
 
       if (Ember.isArray(value)) {
-        path = path + '.[]';
+        path = path + '.@each';
       }
       // 
       var prevPath = currentComputed.seen.get(obj);
