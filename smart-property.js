@@ -25,9 +25,9 @@
       var path = prop;
 
       // this needs to be smarter
-      if (Ember.isArray(value)) {
-        path = path + '.@each';
-      }
+      // if (Ember.isArray(value)) {
+      //   path = path + '.@each';
+      // }
       // 
       var prevPath = currentComputed.seen.get(obj);
       if (prevPath) {
@@ -37,6 +37,7 @@
       if (value && typeof value === 'object') {
         currentComputed.seen.set(value, path);
       }
+      console.log(path);
       currentComputed.computed._dependentKeys.push(path);
     }
   };
@@ -118,11 +119,11 @@
       }
     });
 
-    Ember.Observable.reopen({
-      get: function(keyName) {
-        return SmartProp.get(this, keyName);
-      }
-    });
+    Array.prototype.get = function(key) {
+        if (key==='length') return this.length;
+        else if ('number' === typeof key) return this[key];
+        else return SmartProp.get(this, key);
+      };
   }
   
   if (typeof Ember.ENV.SMART_PROP_EXTEND_EMBER_GET === 'undefined' &&
