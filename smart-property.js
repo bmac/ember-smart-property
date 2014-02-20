@@ -28,7 +28,13 @@
       // if (Ember.isArray(value)) {
       //   path = path + '.@each';
       // }
-      // 
+
+
+      if (Ember.isArray(prop)) {
+        path = '@each.{' + prop.join(',') + '}';
+      };
+
+
       var prevPath = currentComputed.seen.get(obj);
       if (prevPath) {
         path = prevPath + '.' + path;
@@ -107,30 +113,32 @@
     return ret;
   };
 
-  
-  if (typeof Ember.ENV.SMART_PROP_EXTEND_OBJECT_GET === 'undefined' && 
-      typeof Ember.ENV.SMART_PROP_EXTEND_EMBER === 'undefined') {
-    Ember.ENV.SMART_PROP_EXTEND_OBJECT_GET = true;
-  }
-  if (Ember.ENV.SMART_PROP_EXTEND_EMBER || Ember.ENV.SMART_PROP_EXTEND_OBJECT_GET) {
-    Ember.Object.reopen({
-      get: function(keyName) {
-        return SmartProp.get(this, keyName);
-      }
-    });
 
-    Array.prototype.get = function(key) {
-        if (key==='length') return this.length;
-        else if ('number' === typeof key) return this[key];
-        else return SmartProp.get(this, key);
-      };
-  }
+  Ember.Object.reopen({
+    get: function(keyName) {
+      return SmartProp.get(this, keyName);
+    }
+  });
+
+
   
-  if (typeof Ember.ENV.SMART_PROP_EXTEND_EMBER_GET === 'undefined' &&
-      typeof Ember.ENV.SMART_PROP_EXTEND_EMBER === 'undefined') {
-    Ember.ENV.SMART_PROP_EXTEND_EMBER_GET = true;
-  }
-  if (Ember.ENV.SMART_PROP_EXTEND_EMBER || Ember.ENV.SMART_PROP_EXTEND_EMBER_GET) {
-    Ember.get = SmartProp.get;
-  }
+  Array.prototype.get = function(key) {
+      if (key==='length') return this.length;
+      else if ('number' === typeof key) return this[key];
+      else return SmartProp.get(this, key);
+  };
+
+  Ember.Enumerable.reopen({
+    sortBy: function() {
+      console.log('sortBy');
+      var sortKeys = [].slice.call(arguments);     
+      var ret = this._super.apply(this, arguments);
+      dependencyDetection.registerDependency(this, sortKeys, ret);
+      
+      return ret;
+    }
+  });
+  
+ Ember.get = SmartProp.get;
+
 }());

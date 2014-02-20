@@ -975,3 +975,21 @@ test('it should work with arrays of objects', function() {
 });
 
 
+test('it should work with arrays of objects', function() {
+
+  var TestObject = Ember.Object.extend({
+    sortedArray: function() {
+      return this.get('someArray').sortBy('foo');
+    }.smartProperty()
+  });
+
+  var obj = TestObject.create({
+      someArray: Ember.A([{foo: 'zyx'}, {foo: 'asdf'}, {foo: 'rawr'}])
+  });
+
+  equal(obj.get('sortedArray.firstObject.foo'), 'asdf');
+  obj.get('someArray').pushObject({foo: 'abba'});
+  equal(obj.get('sortedArray.firstObject.foo'), 'abba');
+});
+
+
