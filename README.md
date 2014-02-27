@@ -1,2 +1,3 @@
 ember-smart-property
 ====================
+WIP
