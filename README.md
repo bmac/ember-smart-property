@@ -1,3 +1,3 @@
 ember-smart-property
 ====================
-WIP
+No longer maintained. Check out https://github.com/jayphelps/ember-computed-smart-property
